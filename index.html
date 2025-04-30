@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Гра: Хрестики-Нулики</title>
+  <style>
+    body {
+      background: linear-gradient(135deg, #f6f9fc, #e9eff5);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #333;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+      font-size: 2.5em;
+      color: #444;
+    }
+    #status {
+      font-size: 1.5em;
+      margin: 15px;
+      padding: 10px;
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      display: inline-block;
+    }
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    td {
+      width: 70px;
+      height: 70px;
+      border: 1px solid #ddd;
+      font-size: 2.5em;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    td:hover {
+      background: #f0f0f0;
+    }
+    button {
+      font-size: 1.2em;
+      padding: 10px 20px;
+      margin-top: 10px;
+      background: #6A0DAD;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #580a8e;
+    }
+  </style>
+</head>
+<body>
+  <h1>Хрестики-Нулики</h1>
+  <div id="status"></div>
+  <table id="board">
+    <tr>
+      <td data-cell="0"></td>
+      <td data-cell="1"></td>
+      <td data-cell="2"></td>
+    </tr>
+    <tr>
+      <td data-cell="3"></td>
+      <td data-cell="4"></td>
+      <td data-cell="5"></td>
+    </tr>
+    <tr>
+      <td data-cell="6"></td>
+      <td data-cell="7"></td>
+      <td data-cell="8"></td>
+    </tr>
+  </table>
+  <button id="resetBtn">Нова гра</button>
+  
+  <script>
+    let game;
+  
+    // Завантаження стану гри
+    function fetchGame() {
+      fetch('/api/game')
+        .then(res => res.json())
+        .then(data => {
+          game = data;
+          updateBoard();
+          updateStatus();
+        });
+    }
+  
+    // Оновлення ігрового поля
+    function updateBoard() {
+      for (let i = 0; i < 9; i++) {
+        const cell = document.querySelector(`[data-cell="${i}"]`);
+        cell.textContent = game.board[i] || "";
+      }
+    }
+  
+    // Оновлення повідомлення про статус гри
+    function updateStatus() {
+      const statusDiv = document.getElementById("status");
+      if (game.result) {
+        statusDiv.textContent = "Результат: " + game.result;
+      } else {
+        statusDiv.textContent = "Ваш хід (" + game.playerSign + ")";
+      }
+    }
+  
+    // Обробка кліку по клітинці
+    document.getElementById("board").addEventListener("click", function(e) {
+      const cellIndex = e.target.getAttribute("data-cell");
+      if (cellIndex === null || game.result) return;
+      
+      fetch('/api/move', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ move: parseInt(cellIndex) })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          game = data;
+          updateBoard();
+          updateStatus();
+        }
+      });
+    });
+  
+    // Обробка кнопки "Нова гра"
+    document.getElementById("resetBtn").addEventListener("click", function() {
+      fetch('/api/reset', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          game = data;
+          updateBoard();
+          updateStatus();
+        });
+    });
+  
+    // Первинне завантаження гри
+    fetchGame();
+  </script>
+</body>
+</html>
